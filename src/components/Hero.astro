@@ -1,0 +1,55 @@
+---
+interface Props {
+  profilePic: string;
+  rating: number;
+  reviews: number;
+}
+const { profilePic, rating, reviews } = Astro.props;
+---
+<section class="relative isolate flex min-h-screen items-end overflow-hidden bg-ink px-5 pb-14 pt-32 lg:px-10 lg:pb-20">
+  <canvas id="hero-canvas" class="pointer-events-none absolute inset-0 h-full w-full opacity-80" aria-hidden="true"></canvas>
+  <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_70%_35%,rgba(179,216,138,.16),transparent_26%),radial-gradient(circle_at_20%_90%,rgba(115,72,39,.22),transparent_32%)]"></div>
+  <div class="relative z-10 mx-auto w-full max-w-7xl">
+    <div class="mb-10 flex items-center gap-3 text-acid">
+      <span class="eyebrow">Erbil · Since the details began</span>
+      <span class="h-px w-12 bg-acid/40"></span>
+    </div>
+    <div class="max-w-6xl">
+      <h1 class="text-[clamp(4.5rem,14vw,12rem)] font-extrabold leading-[.78] tracking-[-.1em] text-bone">SPINOZA<span class="text-acid">.</span></h1>
+      <div class="mt-8 flex flex-col justify-between gap-8 md:flex-row md:items-end">
+        <p class="max-w-md text-lg leading-relaxed text-white/60">A considered café for organic espresso, Dutch apple pie, deep focus, and the beautiful in-between.</p>
+        <div class="flex items-center gap-4">
+          <img src={profilePic} alt="Spinoza Cafe profile" class="h-14 w-14 rounded-full object-cover ring-2 ring-acid/60" />
+          <div><p class="font-semibold text-bone">@spinozaerbil</p><p class="text-sm text-white/50">1,572 followers · Every detail matters.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-16 flex flex-wrap items-center gap-4">
+      <a href="#visit" class="rounded-full bg-acid px-6 py-4 text-sm font-bold text-ink transition hover:bg-bone">Plan your visit <span aria-hidden="true">↗</span></a>
+      <div class="flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-5 py-3 backdrop-blur"><span class="text-acid">★</span><strong>{rating}</strong><span class="text-sm text-white/50">on Google · {reviews} reviews</span></div>
+    </div>
+  </div>
+  <div class="eyebrow absolute bottom-8 right-5 hidden text-white/40 lg:block">Scroll to explore ↓</div>
+</section>
+
+<script>
+  const canvas = document.querySelector('#hero-canvas') as HTMLCanvasElement | null;
+  if (canvas) {
+    const gl = canvas.getContext('webgl', { alpha: true, antialias: true });
+    if (gl) {
+      const vertex = `attribute vec2 p; void main(){gl_Position=vec4(p,0.,1.);}`;
+      const fragment = `precision highp float; uniform float t; uniform vec2 m;
+      float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+      void main(){vec2 uv=gl_FragCoord.xy/vec2(${window.innerWidth}.0,${window.innerHeight}.0); float n=sin(uv.x*5.0+t*.2)+sin(uv.y*7.0-t*.16)+sin((uv.x+uv.y)*11.0+t*.1); float glow=pow(max(0.,1.-distance(uv,vec2(.72,.35))*1.5),3.); vec3 c=mix(vec3(.02,.03,.025),vec3(.22,.38,.12),glow+max(0.,n)*.025); gl_FragColor=vec4(c,.72);}`;
+      const compile = (type: number, source: string) => { const s = gl.createShader(type)!; gl.shaderSource(s, source); gl.compileShader(s); return s; };
+      const program = gl.createProgram()!;
+      gl.attachShader(program, compile(gl.VERTEX_SHADER, vertex)); gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragment)); gl.linkProgram(program); gl.useProgram(program);
+      const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(program, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      const time = gl.getUniformLocation(program, 't'); let start = performance.now();
+      const resize = () => { const d = Math.min(devicePixelRatio, 2); canvas.width = innerWidth*d; canvas.height = innerHeight*d; gl.viewport(0,0,canvas.width,canvas.height); };
+      addEventListener('resize', resize); resize();
+      const draw = (now: number) => { gl.uniform1f(time, (now-start)/1000); gl.drawArrays(gl.TRIANGLE_STRIP,0,4); requestAnimationFrame(draw); }; requestAnimationFrame(draw);
+    }
+  }
+</script>
